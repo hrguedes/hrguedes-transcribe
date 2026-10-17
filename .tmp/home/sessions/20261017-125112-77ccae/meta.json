@@ -1,0 +1,15 @@
+{
+  "id": "20261017-125112-77ccae",
+  "title": "Reunião 17/10/2026 12:51",
+  "created_at": "2026-10-17T12:51:12-03:00",
+  "duration": 3.0225,
+  "status": "done",
+  "error": null,
+  "model": "faster-whisper-small",
+  "extra": {
+    "devices": {
+      "mic": "Microfone (MacBook Pro)",
+      "system": null
+    }
+  }
+}
