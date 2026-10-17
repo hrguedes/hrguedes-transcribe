@@ -116,3 +116,21 @@ def test_missing_model_fails_without_downloading(qapp, store, tmp_path):
     assert _wait_until(lambda: s.status is SessionStatus.ERROR)
     assert "não foi baixado" in s.error
     assert not (tmp_path / "models").exists()
+
+
+def test_model_availability_follows_settings(qapp, store, tmp_path):
+    from app.transcription import FasterWhisperTranscriber, models
+
+    root = tmp_path / "models"
+    c = AppController(store, Settings(model="small"), lambda st: FasterWhisperTranscriber(st.model, root))
+    assert not c.is_model_available()
+
+    path = models.model_dir(root, "small")
+    path.mkdir(parents=True)
+    for name in models.REQUIRED_FILES:
+        (path / name).write_text("x")
+    assert c.is_model_available()
+
+    c.apply_settings(Settings(model="medium"))
+    assert not c.is_model_available()
+    assert not models.model_dir(root, "medium").exists()

@@ -73,6 +73,10 @@ class Transcriber(ABC):
     def set_vocabulary(self, vocabulary: list[str]) -> None:  # noqa: B027
         """Opcional: engines que aceitam vocabulário personalizado sobrescrevem."""
 
+    def is_available(self) -> bool:
+        """Se o modelo está pronto para uso nesta máquina, sem baixar nada."""
+        return True
+
     @abstractmethod
     def transcribe(
         self,
@@ -109,9 +113,12 @@ class FasterWhisperTranscriber(Transcriber):
     def set_vocabulary(self, vocabulary: list[str]) -> None:
         self.vocabulary = list(vocabulary)
 
+    def is_available(self) -> bool:
+        return models.is_downloaded(self.models_dir, self.model_id)
+
     def _load(self, on_status: StatusCallback):
         if self._model is None:
-            if not models.is_downloaded(self.models_dir, self.model_id):
+            if not self.is_available():
                 raise ModelNotDownloaded(self.model_id)
             on_status(f"Carregando o modelo {models.get_model_info(self.model_id).label}…")
             from faster_whisper import WhisperModel

@@ -132,6 +132,9 @@ class AppController(QObject):
         self._transcriber.set_vocabulary(self.settings.vocabulary)
         return self._transcriber
 
+    def is_model_available(self) -> bool:
+        return self._transcriber_for_current_settings().is_available()
+
     @property
     def is_transcribing(self) -> bool:
         return self._tx_thread is not None

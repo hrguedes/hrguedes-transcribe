@@ -21,6 +21,8 @@ from app.audio import devices as audio_devices
 from app.controller import AppController
 from app.export.common import format_timestamp
 from app.sessions import SessionStatus
+from app.transcription import models
+from app.ui.settings_dialog import SettingsDialog
 from app.ui.style import IDLE_COLOR, PAUSED_COLOR, RECORDING_COLOR, record_button_style
 
 RECORD_BUTTON_SIZE = 168
@@ -158,6 +160,8 @@ class RecordPage(QWidget):
 
     def _on_record_clicked(self) -> None:
         if self.controller.recording_state is SessionStatus.IDLE:
+            if not self._confirm_model_available():
+                return
             mic = self.mic_combo.currentData()
             system = self.system_combo.currentData()
             if mic is not None and system is not None and mic.index == system.index:
@@ -170,6 +174,34 @@ class RecordPage(QWidget):
                 QMessageBox.critical(self, "Não foi possível gravar", f"Erro ao criar a sessão em disco:\n{exc}")
         else:
             self.controller.stop_recording()
+
+    def _confirm_model_available(self) -> bool:
+        if self.controller.is_model_available():
+            return True
+        label = models.get_model_info(self.controller.settings.model).label
+        box = QMessageBox(
+            QMessageBox.Icon.Warning,
+            "Modelo não encontrado",
+            f"O modelo de transcrição <b>{label}</b> não está baixado neste computador.",
+            parent=self,
+        )
+        box.setInformativeText(
+            "Sem ele, a gravação será salva, mas não será transcrita ao terminar. "
+            "Baixe o modelo em Configurações ou grave assim mesmo e transcreva depois."
+        )
+        settings_btn = box.addButton("Abrir Configurações", QMessageBox.ButtonRole.AcceptRole)
+        record_btn = box.addButton("Gravar mesmo assim", QMessageBox.ButtonRole.DestructiveRole)
+        box.addButton(QMessageBox.StandardButton.Cancel)
+        box.setDefaultButton(settings_btn)
+        box.exec()
+
+        clicked = box.clickedButton()
+        if clicked is record_btn:
+            return True
+        if clicked is settings_btn:
+            SettingsDialog(self.controller, self.window()).exec()
+            return self.controller.is_model_available()
+        return False
 
     def _update_timer(self) -> None:
         self.timer_label.setText(format_timestamp(self.controller.elapsed_seconds()))
